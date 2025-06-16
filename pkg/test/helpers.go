@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"testing"
 
-	"rest-to-soap/pkg/template/core"
-	"rest-to-soap/pkg/template/validation"
+	"rest-to-soap/pkg/core"
+	"rest-to-soap/pkg/validation"
 )
 
 // GetTestFixturesDir returns the path to the test fixtures directory

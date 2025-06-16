@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"rest-to-soap/pkg/template/validation"
+	"rest-to-soap/pkg/validation"
 )
 
 func TestTemplateSystem(t *testing.T) {

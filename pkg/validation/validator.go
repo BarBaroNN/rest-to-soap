@@ -3,7 +3,7 @@ package validation
 import (
 	"fmt"
 
-	"rest-to-soap/pkg/template/core"
+	"rest-to-soap/pkg/core"
 )
 
 // Validator validates templates against WSDL paths

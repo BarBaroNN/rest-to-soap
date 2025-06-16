@@ -1,0 +1,26 @@
+[
+{{- $countries := .Envelope.Body.FullCountryInfoAllCountriesResponse.FullCountryInfoAllCountriesResult.tCountryInfo -}}
+{{- range $i, $c := $countries }}
+  {{- if $i}},
+  {{end}}
+  {
+    "ISOCode": "{{$c.sISOCode}}",
+    "name": "{{$c.sName}}",
+    "capitalCity": "{{$c.sCapitalCity}}",
+    "phoneCode": "{{$c.sPhoneCode}}",
+    "continentCode": "{{$c.sContinentCode}}",
+    "currencyISOCode": "{{$c.sCurrencyISOCode}}",
+    "countryFlag": "{{$c.sCountryFlag}}",
+    "languages": [
+      {{- $langs := $c.Languages.tLanguage -}}
+      {{- range $j, $lang := $langs }}
+        {{- if $j}},{{end}}
+        {
+          "ISOCode": "{{$lang.sISOCode}}",
+          "name": "{{$lang.sName}}"
+        }
+      {{- end }}
+    ]
+  }
+{{- end }}
+] 

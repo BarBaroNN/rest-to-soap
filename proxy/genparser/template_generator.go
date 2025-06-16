@@ -50,7 +50,7 @@ func (g *TemplateGenerator) GenerateTemplates(cfg *config.Config) error {
 // generateTemplate generates a Go template for a specific WSDL operation
 func (g *TemplateGenerator) generateTemplate(wsdlURL, operationName, templatePath string) error {
 	// Generate structs from WSDL
-	structs, err := ExtractStructsFromWSDL(wsdlURL, operationName)
+	structs, operation, err := ExtractStructsFromWSDL(wsdlURL, operationName)
 	if err != nil {
 		return fmt.Errorf("failed to extract structs: %w", err)
 	}
@@ -77,7 +77,7 @@ func Parse(xmlData []byte) (string, error) {
 	var response struct {
 		XMLName xml.Name %s
 		Body    struct {
-			Response %sResponse %s
+			Response %v %v
 		} %s
 	}
 
@@ -103,8 +103,8 @@ func Parse(xmlData []byte) (string, error) {
 		operationName,
 		operationName,
 		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Envelope\"`",
-		operationName,
-		"`xml:\"Response\"`",
+		operation,
+		fmt.Sprintf("`xml:\"%s\"`", operation),
 		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Body\"`",
 		templatePath,
 	)

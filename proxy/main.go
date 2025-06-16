@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"rest-to-soap/proxy/config"
+	"rest-to-soap/proxy/genparser"
 	"rest-to-soap/proxy/handler"
 
 	"go.uber.org/zap"
@@ -45,10 +46,10 @@ func main() {
 	defer logger.Sync()
 
 	// Initialize template generator
-	// templateGen := genparser.NewTemplateGenerator()
-	// // if err := templateGen.GenerateTemplates(cfg); err != nil {
-	// // 	logger.Fatal("Failed to generate templates", zap.Error(err))
-	// // }
+	templateGen := genparser.NewTemplateGenerator()
+	if err := templateGen.GenerateTemplates(cfg); err != nil {
+		logger.Fatal("Failed to generate templates", zap.Error(err))
+	}
 
 	// Create handler
 	h, err := handler.NewHandler(cfg, logger)

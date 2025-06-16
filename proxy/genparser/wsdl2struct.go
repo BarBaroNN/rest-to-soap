@@ -104,7 +104,7 @@ type xsAttribute struct {
 }
 
 // ExtractStructsFromWSDL parses the WSDL and returns Go struct definitions for the specified endpoint
-func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
+func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, string, error) {
 	fmt.Printf("Reading WSDL file: %s\n", wsdlPath)
 
 	// Read WSDL content
@@ -118,23 +118,23 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 		}
 		resp, err := client.Get(wsdlPath)
 		if err != nil {
-			return "", fmt.Errorf("failed to fetch WSDL from URL: %w", err)
+			return "", "", fmt.Errorf("failed to fetch WSDL from URL: %w", err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("failed to fetch WSDL: HTTP %d", resp.StatusCode)
+			return "", "", fmt.Errorf("failed to fetch WSDL: HTTP %d", resp.StatusCode)
 		}
 
 		data, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return "", fmt.Errorf("failed to read WSDL response: %w", err)
+			return "", "", fmt.Errorf("failed to read WSDL response: %w", err)
 		}
 	} else {
 		// Handle local files
 		data, err = os.ReadFile(wsdlPath)
 		if err != nil {
-			return "", fmt.Errorf("failed to read WSDL file: %w", err)
+			return "", "", fmt.Errorf("failed to read WSDL file: %w", err)
 		}
 	}
 
@@ -142,7 +142,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 
 	var wsdl wsdlDefinitions
 	if err := xml.Unmarshal(data, &wsdl); err != nil {
-		return "", fmt.Errorf("failed to parse WSDL: %w", err)
+		return "", "", fmt.Errorf("failed to parse WSDL: %w", err)
 	}
 	fmt.Printf("Successfully parsed WSDL\n")
 
@@ -157,7 +157,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 		}
 	}
 	if operation.Name == "" {
-		return "", fmt.Errorf("endpoint %s not found", endpointName)
+		return "", "", fmt.Errorf("endpoint %s not found", endpointName)
 	}
 	fmt.Printf("Found matching operation: %s\n", operation.Name)
 
@@ -176,7 +176,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 		}
 	}
 	if outputMessage.Name == "" {
-		return "", fmt.Errorf("output message not found for endpoint %s", endpointName)
+		return "", "", fmt.Errorf("output message not found for endpoint %s", endpointName)
 	}
 	fmt.Printf("Found matching message: %s\n", outputMessage.Name)
 
@@ -190,7 +190,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 		}
 	}
 	if responseType == "" {
-		return "", fmt.Errorf("response type not found for endpoint %s", endpointName)
+		return "", "", fmt.Errorf("response type not found for endpoint %s", endpointName)
 	}
 	fmt.Printf("Found response type: %s\n", responseType)
 
@@ -258,7 +258,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 	visited := make(map[string]bool)
 	fmt.Printf("Starting recursive struct generation for type: %s\n", responseType)
 	if err := buildStructsRecursive(typeMap, elementMap, responseType, structs, visited, ""); err != nil {
-		return "", fmt.Errorf("failed to build structs: %w", err)
+		return "", responseType, fmt.Errorf("failed to build structs: %w", err)
 	}
 
 	// Also build structs for all complex types in the typeMap
@@ -267,7 +267,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 		if !visited[name] {
 			fmt.Printf("Building struct for complex type: %s\n", name)
 			if err := buildStructsRecursive(typeMap, elementMap, name, structs, visited, ""); err != nil {
-				return "", fmt.Errorf("failed to build struct for complex type %s: %w", name, err)
+				return "", responseType, fmt.Errorf("failed to build struct for complex type %s: %w", name, err)
 			}
 		}
 	}
@@ -279,7 +279,8 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 		fmt.Printf("Struct: %s\n%s\n", name, s)
 		out.WriteString(s + "\n\n")
 	}
-	return out.String(), nil
+
+	return out.String(), GoTypeName(responseType), nil
 }
 
 // buildStructsRecursive generates Go structs for the given type/element name recursively

@@ -1,20 +1,20 @@
 [
-  {{- range $i, $c := .FullCountryInfoAllCountriesResult }}
+  {{- range $i, $c := .FullCountryInfoAllCountriesResult.TCountryInfo }}
     {{- if $i}},{{ end }}
     {
-      "ISOCode": "{{ $c.ISOCode }}",
-      "name": "{{ $c.Name }}",
-      "capitalCity": "{{ $c.CapitalCity }}",
-      "phoneCode": "{{ $c.PhoneCode }}",
-      "continentCode": "{{ $c.ContinentCode }}",
-      "currencyISOCode": "{{ $c.CurrencyISOCode }}",
-      "countryFlag": "{{ $c.CountryFlag }}",
+      "ISOCode": "{{ $c.SISOCode }}",
+      "name": "{{ $c.SName }}",
+      "capitalCity": "{{ $c.SCapitalCity }}",
+      "phoneCode": "{{ $c.SPhoneCode }}",
+      "continentCode": "{{ $c.SContinentCode }}",
+      "currencyISOCode": "{{ $c.SCurrencyISOCode }}",
+      "countryFlag": "{{ $c.SCountryFlag }}",
       "languages": [
-        {{- range $j, $l := $c.Languages }}
+        {{- range $j, $l := $c.Languages.TLanguage }}
           {{- if $j}},{{ end }}
           {
-            "code": "{{ $l.code }}",
-            "name": "{{ $l.name }}"
+            "code": "{{ $l.SISOCode }}",
+            "name": "{{ $l.SName }}"
           }
         {{- end }}
       ]

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"rest-to-soap/proxy/config"
 )
@@ -57,7 +56,7 @@ func (g *TemplateGenerator) generateTemplate(wsdlURL, operationName, templatePat
 	}
 
 	// Create the output file
-	outputPath := filepath.Join(g.outputDir, fmt.Sprintf("%s.go", operationName))
+	outputPath := filepath.Join(g.outputDir, "parser.go")
 
 	// Prepare the generated code
 	generatedCode := fmt.Sprintf(
@@ -73,7 +72,7 @@ import (
 %s
 
 // %sParser parses the SOAP response for the %s operation
-func %sParser(xmlData []byte) (string, error) {
+func Parse(xmlData []byte) (string, error) {
 	// Define the SOAP envelope structure with the proper response type
 	var response struct {
 		XMLName xml.Name %s
@@ -103,19 +102,12 @@ func %sParser(xmlData []byte) (string, error) {
 		structs,
 		operationName,
 		operationName,
-		operationName,
 		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Envelope\"`",
 		operationName,
 		"`xml:\"Response\"`",
 		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Body\"`",
 		templatePath,
 	)
-
-	// // Read existing file if it exists and skip writing if unchanged
-	// existingContent, err := os.ReadFile(outputPath)
-	// if err == nil && string(existingContent) == generatedCode {
-	// 	return nil // Skip if content is the same
-	// }
 
 	// Create or update the file
 	outputFile, err := os.Create(outputPath)
@@ -129,24 +121,4 @@ func %sParser(xmlData []byte) (string, error) {
 	}
 
 	return nil
-}
-
-// extractOperationName extracts the operation name from a SOAP endpoint
-func extractOperationName(endpoint string) string {
-	// Remove any namespace prefixes and URLs
-	if idx := strings.LastIndex(endpoint, "/"); idx != -1 {
-		endpoint = endpoint[idx+1:]
-	}
-	if idx := strings.Index(endpoint, ":"); idx != -1 {
-		endpoint = endpoint[idx+1:]
-	}
-	// Remove any query parameters
-	if idx := strings.Index(endpoint, "?"); idx != -1 {
-		endpoint = endpoint[:idx]
-	}
-	// Remove any file extensions
-	if idx := strings.LastIndex(endpoint, "."); idx != -1 {
-		endpoint = endpoint[:idx]
-	}
-	return endpoint
 }

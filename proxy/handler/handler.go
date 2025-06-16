@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"rest-to-soap/proxy/config"
-	"rest-to-soap/proxy/parser"
+	parser "rest-to-soap/proxy/generated"
 	transport "rest-to-soap/proxy/soap"
 	"rest-to-soap/proxy/wsdl"
 
@@ -26,14 +26,13 @@ type RequestBody struct {
 
 // Handler handles HTTP requests and forwards them to SOAP endpoints
 type Handler struct {
-	cfg            *config.Config
-	client         *transport.Client
-	pool           *Pool
-	logger         *zap.Logger
-	wsdl           *wsdl.Parser
-	requestTmpl    *template.Template
-	responseTmpl   *template.Template
-	parserRegistry *parser.ParserRegistry
+	cfg          *config.Config
+	client       *transport.Client
+	pool         *Pool
+	logger       *zap.Logger
+	wsdl         *wsdl.Parser
+	requestTmpl  *template.Template
+	responseTmpl *template.Template
 }
 
 // NewHandler creates a new request handler
@@ -49,21 +48,14 @@ func NewHandler(cfg *config.Config, logger *zap.Logger) (*Handler, error) {
 		return nil, err
 	}
 
-	// Create parser registry
-	registry := parser.NewParserRegistry()
-	if err := registry.LoadGeneratedParsers(); err != nil {
-		return nil, fmt.Errorf("failed to load generated parsers: %w", err)
-	}
-
 	return &Handler{
-		cfg:            cfg,
-		client:         transport.NewClient(30*time.Second, logger),
-		pool:           NewPool(),
-		logger:         logger,
-		wsdl:           wsdl.NewParser(logger),
-		requestTmpl:    requestTmpl,
-		responseTmpl:   responseTmpl,
-		parserRegistry: registry,
+		cfg:          cfg,
+		client:       transport.NewClient(30*time.Second, logger),
+		pool:         NewPool(),
+		logger:       logger,
+		wsdl:         wsdl.NewParser(logger),
+		requestTmpl:  requestTmpl,
+		responseTmpl: responseTmpl,
 	}, nil
 }
 
@@ -211,7 +203,7 @@ func (h *Handler) processRequest(w http.ResponseWriter, r *http.Request, route *
 	}
 
 	// Parse SOAP response using the appropriate parser
-	response, err := h.parserRegistry.Parse(route.Headers["SOAPAction"], respBody)
+	response, err := parser.Parse(respBody)
 	if err != nil {
 		return fmt.Errorf("failed to parse SOAP response: %w", err)
 	}

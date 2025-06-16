@@ -86,11 +86,11 @@ type xsSequence struct {
 
 type xsElement struct {
 	Name        string         `xml:"name,attr"`
-	Type        string         `xml:"http://www.w3.org/2001/XMLSchema type,attr"`
+	Type        string         `xml:"type,attr"`
 	MinOccurs   string         `xml:"minOccurs,attr"`
 	MaxOccurs   string         `xml:"maxOccurs,attr"`
 	Nillable    string         `xml:"nillable,attr"`
-	Ref         string         `xml:"http://www.w3.org/2001/XMLSchema ref,attr"`
+	Ref         string         `xml:"ref,attr"`
 	ComplexType *xsComplexType `xml:"complexType"`
 }
 
@@ -264,18 +264,101 @@ func buildStructsRecursive(typeMap map[string]xsComplexType, elementMap map[stri
 		fmt.Printf("Empty type name, skipping\n")
 		return nil
 	}
-	if visited[baseTypeName] {
-		fmt.Printf("Type %s already visited, skipping\n", baseTypeName)
+
+	// Check if it's a built-in type first
+	if isBuiltInType(typeName) {
+		fmt.Printf("Type %s is a built-in XSD type, skipping struct generation\n", typeName)
 		return nil
 	}
-	visited[baseTypeName] = true
 
-	// Check if it's an element
+	// Check if it's a complex type first
+	if t, ok := typeMap[baseTypeName]; ok {
+		// Only mark as visited if we're actually going to process it
+		if !visited[baseTypeName] {
+			visited[baseTypeName] = true
+			fmt.Printf("Found complex type definition for %s\n", baseTypeName)
+
+			var sb strings.Builder
+			structName := GoTypeName(baseTypeName)
+			sb.WriteString("type " + structName + " struct {\n")
+
+			// Handle sequence elements
+			if t.Sequence != nil {
+				fmt.Printf("Processing sequence with %d elements\n", len(t.Sequence.Elements))
+				for _, e := range t.Sequence.Elements {
+					// Get the actual type, handling both direct types and references
+					fieldType := e.Type
+					if fieldType == "" && e.Ref != "" {
+						fieldType = e.Ref
+					}
+
+					// If the element has a complex type definition, use that
+					if e.ComplexType != nil {
+						// Add the complex type to the type map with a unique name
+						complexTypeName := baseTypeName + "_" + e.Name
+						typeMap[complexTypeName] = *e.ComplexType
+						fieldType = complexTypeName
+					}
+
+					// Process the element's type first if it's a complex type and not a built-in type
+					if fieldType != "" && !isBuiltInType(fieldType) {
+						if err := buildStructsRecursive(typeMap, elementMap, fieldType, structs, visited, e.Name); err != nil {
+							return err
+						}
+					}
+
+					// Convert the type to a Go type
+					goType := GoTypeName(fieldType)
+					if e.MaxOccurs != "" && e.MaxOccurs != "1" {
+						goType = "[]" + goType
+					}
+
+					fmt.Printf("Adding sequence element %s of type %s (Go type: %s)\n", e.Name, fieldType, goType)
+					sb.WriteString("\t" + goFieldName(e.Name) + " " + goType + " `xml:\"" + e.Name + "\"`\n")
+				}
+			}
+
+			// Handle attributes
+			if len(t.Attributes) > 0 {
+				fmt.Printf("Processing %d attributes\n", len(t.Attributes))
+				for _, attr := range t.Attributes {
+					fieldType := GoTypeName(attr.Type)
+					fmt.Printf("Adding attribute %s of type %s\n", attr.Name, fieldType)
+					sb.WriteString("\t" + goFieldName(attr.Name) + " " + fieldType + " `xml:\"" + attr.Name + ",attr\"`\n")
+				}
+			}
+
+			// Handle simple content
+			if t.SimpleContent != nil {
+				fmt.Printf("Processing simple content with base type %s\n", t.SimpleContent.Extension.Base)
+				baseType := GoTypeName(t.SimpleContent.Extension.Base)
+				sb.WriteString("\tValue " + baseType + " `xml:\",chardata\"`\n")
+				for _, attr := range t.SimpleContent.Extension.Attributes {
+					fieldType := GoTypeName(attr.Type)
+					fmt.Printf("Adding simple content attribute %s of type %s\n", attr.Name, fieldType)
+					sb.WriteString("\t" + goFieldName(attr.Name) + " " + fieldType + " `xml:\"" + attr.Name + ",attr\"`\n")
+				}
+			}
+
+			sb.WriteString("}")
+			structs[structName] = sb.String()
+		}
+		return nil
+	}
+
+	// If not a complex type, check if it's an element
 	if elem, ok := elementMap[baseTypeName]; ok {
 		fmt.Printf("Found element definition for %s\n", baseTypeName)
 		// If the element has a type, use that
 		if elem.Type != "" {
 			fmt.Printf("Element has type: %s\n", elem.Type)
+			// Process the element's type first if it's not a built-in type
+			if !isBuiltInType(elem.Type) {
+				if err := buildStructsRecursive(typeMap, elementMap, elem.Type, structs, visited, elem.Name); err != nil {
+					return err
+				}
+			}
+
 			// Create a struct for the element
 			var sb strings.Builder
 			structName := GoTypeName(baseTypeName)
@@ -288,11 +371,6 @@ func buildStructsRecursive(typeMap map[string]xsComplexType, elementMap map[stri
 			}
 			fmt.Printf("Adding field %s of type %s\n", elem.Name, fieldType)
 			sb.WriteString("\t" + goFieldName(elem.Name) + " " + fieldType + " `xml:\"" + elem.Name + "\"`\n")
-
-			// Recursively build the type's struct
-			if err := buildStructsRecursive(typeMap, elementMap, elem.Type, structs, visited, elem.Name); err != nil {
-				return err
-			}
 
 			sb.WriteString("}")
 			structs[structName] = sb.String()
@@ -325,16 +403,35 @@ func buildStructsRecursive(typeMap map[string]xsComplexType, elementMap map[stri
 				if t.Sequence != nil {
 					fmt.Printf("Processing sequence with %d elements\n", len(t.Sequence.Elements))
 					for _, e := range t.Sequence.Elements {
-						fieldType := GoTypeName(e.Type)
+						// Get the actual type, handling both direct types and references
+						fieldType := e.Type
+						if fieldType == "" && e.Ref != "" {
+							fieldType = e.Ref
+						}
+
+						// If the element has a complex type definition, use that
+						if e.ComplexType != nil {
+							// Add the complex type to the type map with a unique name
+							complexTypeName := baseTypeName + "_" + e.Name
+							typeMap[complexTypeName] = *e.ComplexType
+							fieldType = complexTypeName
+						}
+
+						// Process the element's type first if it's a complex type and not a built-in type
+						if fieldType != "" && !isBuiltInType(fieldType) {
+							if err := buildStructsRecursive(typeMap, elementMap, fieldType, structs, visited, e.Name); err != nil {
+								return err
+							}
+						}
+
+						// Convert the type to a Go type
+						goType := GoTypeName(fieldType)
 						if e.MaxOccurs != "" && e.MaxOccurs != "1" {
-							fieldType = "[]" + fieldType
+							goType = "[]" + goType
 						}
-						fmt.Printf("Adding sequence element %s of type %s\n", e.Name, fieldType)
-						sb.WriteString("\t" + goFieldName(e.Name) + " " + fieldType + " `xml:\"" + e.Name + "\"`\n")
-						// Recursively build nested types
-						if err := buildStructsRecursive(typeMap, elementMap, e.Type, structs, visited, e.Name); err != nil {
-							return err
-						}
+
+						fmt.Printf("Adding sequence element %s of type %s (Go type: %s)\n", e.Name, fieldType, goType)
+						sb.WriteString("\t" + goFieldName(e.Name) + " " + goType + " `xml:\"" + e.Name + "\"`\n")
 					}
 				}
 
@@ -367,16 +464,19 @@ func buildStructsRecursive(typeMap map[string]xsComplexType, elementMap map[stri
 			if matchingElem, ok := elementMap[baseTypeName]; ok {
 				fmt.Printf("Found matching element for %s\n", baseTypeName)
 				if matchingElem.Type != "" {
+					// Process the element's type first if it's not a built-in type
+					if !isBuiltInType(matchingElem.Type) {
+						if err := buildStructsRecursive(typeMap, elementMap, matchingElem.Type, structs, visited, matchingElem.Name); err != nil {
+							return err
+						}
+					}
+
 					fieldType := GoTypeName(matchingElem.Type)
 					if matchingElem.MaxOccurs != "" && matchingElem.MaxOccurs != "1" {
 						fieldType = "[]" + fieldType
 					}
 					fmt.Printf("Adding field %s of type %s\n", matchingElem.Name, fieldType)
 					sb.WriteString("\t" + goFieldName(matchingElem.Name) + " " + fieldType + " `xml:\"" + matchingElem.Name + "\"`\n")
-					// Recursively build the type's struct
-					if err := buildStructsRecursive(typeMap, elementMap, matchingElem.Type, structs, visited, matchingElem.Name); err != nil {
-						return err
-					}
 				}
 			} else {
 				fmt.Printf("Warning: No complex type or matching element found for %s\n", baseTypeName)
@@ -388,59 +488,7 @@ func buildStructsRecursive(typeMap map[string]xsComplexType, elementMap map[stri
 		return nil
 	}
 
-	// If not an element, check if it's a complex type
-	t, ok := typeMap[baseTypeName]
-	if !ok {
-		return fmt.Errorf("type %s not found in type map", baseTypeName)
-	}
-	fmt.Printf("Found complex type definition for %s\n", baseTypeName)
-
-	var sb strings.Builder
-	structName := GoTypeName(baseTypeName)
-	sb.WriteString("type " + structName + " struct {\n")
-
-	// Handle sequence elements
-	if t.Sequence != nil {
-		fmt.Printf("Processing sequence with %d elements\n", len(t.Sequence.Elements))
-		for _, e := range t.Sequence.Elements {
-			fieldType := GoTypeName(e.Type)
-			if e.MaxOccurs != "" && e.MaxOccurs != "1" {
-				fieldType = "[]" + fieldType
-			}
-			fmt.Printf("Adding sequence element %s of type %s\n", e.Name, fieldType)
-			sb.WriteString("\t" + goFieldName(e.Name) + " " + fieldType + " `xml:\"" + e.Name + "\"`\n")
-			// Recursively build nested types
-			if err := buildStructsRecursive(typeMap, elementMap, e.Type, structs, visited, e.Name); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Handle attributes
-	if len(t.Attributes) > 0 {
-		fmt.Printf("Processing %d attributes\n", len(t.Attributes))
-		for _, attr := range t.Attributes {
-			fieldType := GoTypeName(attr.Type)
-			fmt.Printf("Adding attribute %s of type %s\n", attr.Name, fieldType)
-			sb.WriteString("\t" + goFieldName(attr.Name) + " " + fieldType + " `xml:\"" + attr.Name + ",attr\"`\n")
-		}
-	}
-
-	// Handle simple content
-	if t.SimpleContent != nil {
-		fmt.Printf("Processing simple content with base type %s\n", t.SimpleContent.Extension.Base)
-		baseType := GoTypeName(t.SimpleContent.Extension.Base)
-		sb.WriteString("\tValue " + baseType + " `xml:\",chardata\"`\n")
-		for _, attr := range t.SimpleContent.Extension.Attributes {
-			fieldType := GoTypeName(attr.Type)
-			fmt.Printf("Adding simple content attribute %s of type %s\n", attr.Name, fieldType)
-			sb.WriteString("\t" + goFieldName(attr.Name) + " " + fieldType + " `xml:\"" + attr.Name + ",attr\"`\n")
-		}
-	}
-
-	sb.WriteString("}")
-	structs[structName] = sb.String()
-	return nil
+	return fmt.Errorf("type %s not found in type map or element map", baseTypeName)
 }
 
 // GoTypeName converts an XSD type name to a Go type name
@@ -467,6 +515,25 @@ func GoTypeName(xsdType string) string {
 		return "string"
 	}
 	return xsdType
+}
+
+// isBuiltInType checks if the type is a built-in XSD type
+func isBuiltInType(typeName string) bool {
+	if idx := strings.Index(typeName, ":"); idx != -1 {
+		typeName = typeName[idx+1:]
+	}
+	switch typeName {
+	case "string", "normalizedString", "token",
+		"int", "integer", "long", "short", "byte",
+		"decimal", "float", "double",
+		"boolean",
+		"date", "dateTime", "time",
+		"base64Binary",
+		"anyURI",
+		"QName":
+		return true
+	}
+	return false
 }
 
 func goFieldName(xmlName string) string {

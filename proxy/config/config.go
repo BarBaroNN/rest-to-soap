@@ -32,6 +32,7 @@ type RouteConfig struct {
 	Path             string            `json:"path"`
 	Method           string            `json:"method"`
 	SoapEndpoint     string            `json:"soap_endpoint"`
+	SoapAction       string            `json:"soap_action"`
 	RequestTemplate  string            `json:"request_template"`
 	ResponseTemplate string            `json:"response_template"`
 	Headers          map[string]string `json:"headers"`

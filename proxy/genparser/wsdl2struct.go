@@ -1,10 +1,13 @@
-package main
+package genparser
 
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // WSDLType and WSDLElement are minimal representations for parsing
@@ -103,10 +106,38 @@ type xsAttribute struct {
 // ExtractStructsFromWSDL parses the WSDL and returns Go struct definitions for the specified endpoint
 func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, error) {
 	fmt.Printf("Reading WSDL file: %s\n", wsdlPath)
-	data, err := os.ReadFile(wsdlPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read WSDL file: %w", err)
+
+	// Read WSDL content
+	var data []byte
+	var err error
+
+	if strings.HasPrefix(wsdlPath, "http://") || strings.HasPrefix(wsdlPath, "https://") {
+		// Handle HTTP URLs
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
+		resp, err := client.Get(wsdlPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch WSDL from URL: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("failed to fetch WSDL: HTTP %d", resp.StatusCode)
+		}
+
+		data, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("failed to read WSDL response: %w", err)
+		}
+	} else {
+		// Handle local files
+		data, err = os.ReadFile(wsdlPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read WSDL file: %w", err)
+		}
 	}
+
 	fmt.Printf("Successfully read WSDL file (%d bytes)\n", len(data))
 
 	var wsdl wsdlDefinitions

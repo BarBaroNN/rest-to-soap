@@ -1,4 +1,4 @@
-package main
+package genparser
 
 import (
 	"flag"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func main() {
+func Generate() {
 	wsdlPath := flag.String("wsdl", "", "Path to WSDL file")
 	tmplPath := flag.String("tmpl", "", "Path to template file")
 	outPath := flag.String("out", "", "Path to output Go file")

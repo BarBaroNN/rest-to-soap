@@ -8,21 +8,29 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"rest-to-soap/proxy/config"
+	"rest-to-soap/proxy/genparser"
 	"rest-to-soap/proxy/handler"
 
 	"go.uber.org/zap"
 )
 
 var (
-	configPath = flag.String("config", "./config.json", "path to config file")
+	configPath = flag.String("config", "config/config.example.json", "path to config file")
 )
 
 func main() {
 	flag.Parse()
+
+	// Ensure config directory exists
+	configDir := filepath.Dir(*configPath)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		log.Fatalf("Failed to create config directory: %v", err)
+	}
 
 	// Load configuration
 	cfg, err := config.Load(*configPath)
@@ -36,6 +44,12 @@ func main() {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 	defer logger.Sync()
+
+	// Initialize template generator
+	templateGen := genparser.NewTemplateGenerator()
+	if err := templateGen.GenerateTemplates(cfg); err != nil {
+		logger.Fatal("Failed to generate templates", zap.Error(err))
+	}
 
 	// Create handler
 	h, err := handler.NewHandler(cfg, logger)

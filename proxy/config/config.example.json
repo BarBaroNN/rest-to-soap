@@ -10,11 +10,12 @@
       "path": "/api/soap/countries",
       "method": "POST",
       "soap_endpoint": "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso",
+      "soap_action": "FullCountryInfoAllCountries",
       "request_template": "templates/request.tmpl",
       "response_template": "templates/response.tmpl",
       "wsdl_url": "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL",
       "headers": {
-        "SOAPAction": "http://example.com/action",
+        "SOAPAction": "FullCountryInfoAllCountries",
         "Content-Type": "text/xml;charset=UTF-8"
       },
       "timeout": "30s"

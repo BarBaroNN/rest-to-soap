@@ -11,13 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rest-to-soap/config"
-	"github.com/rest-to-soap/handlers"
+	"rest-to-soap/proxy/config"
+	"rest-to-soap/proxy/handler"
+
 	"go.uber.org/zap"
 )
 
 var (
-	configPath = flag.String("config", "config/config.json", "path to config file")
+	configPath = flag.String("config", "./config.json", "path to config file")
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 	defer logger.Sync()
 
 	// Create handler
-	handler, err := handlers.NewHandler(cfg, logger)
+	h, err := handler.NewHandler(cfg, logger)
 	if err != nil {
 		logger.Fatal("Failed to create handler", zap.Error(err))
 	}
@@ -48,7 +49,7 @@ func main() {
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout:  cfg.Server.IdleTimeout,
-		Handler:      handler,
+		Handler:      h,
 	}
 
 	// Start server

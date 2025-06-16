@@ -1,4 +1,4 @@
-module github.com/rest-to-soap
+module rest-to-soap
 
 go 1.21
 

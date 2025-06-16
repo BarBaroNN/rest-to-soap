@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"bytes"
@@ -9,9 +9,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rest-to-soap/config"
-	"github.com/rest-to-soap/transport"
-	"github.com/rest-to-soap/wsdl"
+	"rest-to-soap/proxy/config"
+	transport "rest-to-soap/proxy/soap"
+	"rest-to-soap/proxy/wsdl"
+
 	"go.uber.org/zap"
 )
 
@@ -176,6 +177,7 @@ func (h *Handler) processRequest(w http.ResponseWriter, r *http.Request, route *
 			Code:   soapResp.Fault.FaultCode,
 			String: soapResp.Fault.FaultString,
 		}
+
 	}
 
 	// Convert to JSON

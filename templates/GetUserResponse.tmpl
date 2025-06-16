@@ -1,0 +1,34 @@
+{
+    "ISOCode": "{{.ISOCode}}",
+    "name": "{{.Name}}",
+    "capitalCity": "{{.CapitalCity}}",
+    "languages": [
+        {{range $index, $lang := .Languages}}
+        {{if $index}},{{end}}
+        {
+            "name": "{{$lang.Name}}",
+            "code": "{{$lang.Code}}"
+        }
+        {{end}}
+    ],
+    "population": {{.Population}},
+    "area": {{.Area}},
+    "currency": {
+        "code": "{{.Currency.Code}}",
+        "name": "{{.Currency.Name}}",
+        "symbol": "{{.Currency.Symbol}}"
+    },
+    "timezones": [
+        {{range $index, $tz := .Timezones}}
+        {{if $index}},{{end}}"{{$tz}}"
+        {{end}}
+    ],
+    "borders": [
+        {{range $index, $border := .Borders}}
+        {{if $index}},{{end}}"{{$border}}"
+        {{end}}
+    ],
+    "region": "{{.Region}}",
+    "subregion": "{{.Subregion}}",
+    "flag": "{{.Flag}}"
+} 

@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"bytes"
@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rest-to-soap/config"
+	"rest-to-soap/proxy/config"
+
 	"go.uber.org/zap"
 )
 

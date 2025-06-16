@@ -69,7 +69,7 @@ func %s(xmlData []byte) (string, error) {
 	}
 
 	// Parse and execute the template with the full response struct
-	tmpl, err := template.New("parser").Parse(%q)
+	tmpl, err := template.ParseFiles("%q")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %%w", err)
 	}

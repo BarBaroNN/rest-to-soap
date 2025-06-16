@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"html/template"
+	"fmt"
 	"io"
 	"net/http"
+	"text/template"
 	"time"
 
 	"rest-to-soap/proxy/config"
+	"rest-to-soap/proxy/parser"
 	transport "rest-to-soap/proxy/soap"
 	"rest-to-soap/proxy/wsdl"
 
@@ -22,15 +24,16 @@ type RequestBody struct {
 	Data    interface{} `xml:",any"`
 }
 
-// Handler processes HTTP requests and forwards them to SOAP endpoints
+// Handler handles HTTP requests and forwards them to SOAP endpoints
 type Handler struct {
-	cfg          *config.Config
-	client       *transport.Client
-	pool         *Pool
-	logger       *zap.Logger
-	wsdl         *wsdl.Parser
-	requestTmpl  *template.Template
-	responseTmpl *template.Template
+	cfg            *config.Config
+	client         *transport.Client
+	pool           *Pool
+	logger         *zap.Logger
+	wsdl           *wsdl.Parser
+	requestTmpl    *template.Template
+	responseTmpl   *template.Template
+	parserRegistry *parser.ParserRegistry
 }
 
 // NewHandler creates a new request handler
@@ -46,14 +49,21 @@ func NewHandler(cfg *config.Config, logger *zap.Logger) (*Handler, error) {
 		return nil, err
 	}
 
+	// Create parser registry
+	registry := parser.NewParserRegistry()
+	if err := registry.LoadGeneratedParsers(); err != nil {
+		return nil, fmt.Errorf("failed to load generated parsers: %w", err)
+	}
+
 	return &Handler{
-		cfg:          cfg,
-		client:       transport.NewClient(30*time.Second, logger),
-		pool:         NewPool(),
-		logger:       logger,
-		wsdl:         wsdl.NewParser(logger),
-		requestTmpl:  requestTmpl,
-		responseTmpl: responseTmpl,
+		cfg:            cfg,
+		client:         transport.NewClient(30*time.Second, logger),
+		pool:           NewPool(),
+		logger:         logger,
+		wsdl:           wsdl.NewParser(logger),
+		requestTmpl:    requestTmpl,
+		responseTmpl:   responseTmpl,
+		parserRegistry: registry,
 	}, nil
 }
 
@@ -68,12 +78,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request body
+	// Parse request body if present
 	var body map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		h.logger.Error("Failed to parse request body", zap.Error(err))
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
+	if r.Body != nil && r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			h.logger.Error("Failed to parse request body", zap.Error(err))
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
 	}
 
 	// Process request in worker pool
@@ -83,7 +95,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		h.logger.Error("Request processing failed", zap.Error(err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		// Return error as JSON response
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err.Error(),
+		})
 		return
 	}
 }
@@ -111,14 +128,16 @@ func (h *Handler) processRequest(w http.ResponseWriter, r *http.Request, route *
 	// Convert body to XML with type info if available
 	var bodyXML []byte
 	var err error
-	if typeInfo != nil {
-		bodyXML, err = xml.MarshalIndent(body, "", "  ")
-	} else {
-		reqBody := RequestBody{Data: body}
-		bodyXML, err = xml.Marshal(reqBody)
-	}
-	if err != nil {
-		return err
+	if body != nil {
+		if typeInfo != nil {
+			bodyXML, err = xml.MarshalIndent(body, "", "  ")
+		} else {
+			reqBody := RequestBody{Data: body}
+			bodyXML, err = xml.Marshal(reqBody)
+		}
+		if err != nil {
+			return err
+		}
 	}
 
 	// Render SOAP request
@@ -129,6 +148,13 @@ func (h *Handler) processRequest(w http.ResponseWriter, r *http.Request, route *
 	}); err != nil {
 		return err
 	}
+
+	// Log the SOAP request
+	h.logger.Info("Sending SOAP request",
+		zap.String("endpoint", route.SoapEndpoint),
+		zap.String("action", route.Headers["SOAPAction"]),
+		zap.String("request", fmt.Sprintf("%q", soapReq.String())),
+	)
 
 	// Create SOAP request
 	req, err := http.NewRequestWithContext(r.Context(), "POST", route.SoapEndpoint, &soapReq)
@@ -141,6 +167,11 @@ func (h *Handler) processRequest(w http.ResponseWriter, r *http.Request, route *
 	for k, v := range route.Headers {
 		req.Header.Set(k, v)
 	}
+
+	// Log headers
+	h.logger.Info("Request headers",
+		zap.Any("headers", req.Header),
+	)
 
 	// Send request
 	resp, err := h.client.Do(req)
@@ -155,43 +186,40 @@ func (h *Handler) processRequest(w http.ResponseWriter, r *http.Request, route *
 		return err
 	}
 
-	// Parse SOAP response
-	var soapResp struct {
-		XMLName xml.Name `xml:"Envelope"`
-		Body    struct {
-			Content []byte `xml:",innerxml"`
-		} `xml:"Body"`
-		Fault *struct {
-			FaultCode   string `xml:"faultcode"`
-			FaultString string `xml:"faultstring"`
-		} `xml:"Fault"`
-	}
-
-	if err := xml.Unmarshal(respBody, &soapResp); err != nil {
-		return err
-	}
-
-	// Check for SOAP fault
-	if soapResp.Fault != nil {
-		return &SoapFault{
-			Code:   soapResp.Fault.FaultCode,
-			String: soapResp.Fault.FaultString,
+	// Check for non-200 status codes
+	if resp.StatusCode != http.StatusOK {
+		// Try to parse as SOAP fault first
+		var soapFault struct {
+			XMLName xml.Name `xml:"Envelope"`
+			Body    struct {
+				Fault *struct {
+					FaultCode   string `xml:"faultcode"`
+					FaultString string `xml:"faultstring"`
+				} `xml:"Fault"`
+			} `xml:"Body"`
 		}
 
+		if err := xml.Unmarshal(respBody, &soapFault); err == nil && soapFault.Body.Fault != nil {
+			return &SoapFault{
+				Code:   soapFault.Body.Fault.FaultCode,
+				String: soapFault.Body.Fault.FaultString,
+			}
+		}
+
+		// If not a SOAP fault, return a generic error with the response body
+		return fmt.Errorf("SOAP service returned error (status %d): %s", resp.StatusCode, string(respBody))
 	}
 
-	// Convert to JSON
-	var jsonResp map[string]interface{}
-	if err := xml.Unmarshal(soapResp.Body.Content, &jsonResp); err != nil {
-		return err
+	// Parse SOAP response using the appropriate parser
+	response, err := h.parserRegistry.Parse(route.Headers["SOAPAction"], respBody)
+	if err != nil {
+		return fmt.Errorf("failed to parse SOAP response: %w", err)
 	}
 
-	// Render JSON response
+	// Write the JSON response
 	w.Header().Set("Content-Type", "application/json")
-	return h.responseTmpl.Execute(w, map[string]interface{}{
-		"Status": "success",
-		"Data":   jsonResp,
-	})
+	_, err = w.Write([]byte(response))
+	return err
 }
 
 // SoapFault represents a SOAP fault response

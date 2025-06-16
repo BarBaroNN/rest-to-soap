@@ -1,5 +1,5 @@
 [
-  {{- range $i, $c := .Envelope.Body.FullCountryInfoAllCountriesResponse.FullCountryInfoAllCountriesResult }}
+  {{- range $i, $c := .FullCountryInfoAllCountriesResult }}
     {{- if $i}},{{ end }}
     {
       "ISOCode": "{{ $c.ISOCode }}",

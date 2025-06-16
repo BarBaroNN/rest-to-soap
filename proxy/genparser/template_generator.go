@@ -17,7 +17,7 @@ type TemplateGenerator struct {
 // NewTemplateGenerator creates a new template generator
 func NewTemplateGenerator() *TemplateGenerator {
 	// Create the output directory if it doesn't exist
-	outputDir := "/etc/generated-template"
+	outputDir := "generated"
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		panic(fmt.Sprintf("Failed to create output directory: %v", err))
 	}
@@ -49,7 +49,7 @@ func (g *TemplateGenerator) GenerateTemplates(cfg *config.Config) error {
 }
 
 // generateTemplate generates a Go template for a specific WSDL operation
-func (g *TemplateGenerator) generateTemplate(wsdlURL, operationName, templateContent string) error {
+func (g *TemplateGenerator) generateTemplate(wsdlURL, operationName, templatePath string) error {
 	// Generate structs from WSDL
 	structs, err := ExtractStructsFromWSDL(wsdlURL, operationName)
 	if err != nil {
@@ -58,43 +58,28 @@ func (g *TemplateGenerator) generateTemplate(wsdlURL, operationName, templateCon
 
 	// Create the output file
 	outputPath := filepath.Join(g.outputDir, fmt.Sprintf("%s.go", operationName))
-	outputFile, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer outputFile.Close()
 
-	// Write the package declaration
-	if _, err := fmt.Fprintf(outputFile, "package generated\n\n"); err != nil {
-		return fmt.Errorf("failed to write package declaration: %w", err)
-	}
+	// Prepare the generated code
+	generatedCode := fmt.Sprintf(
+		`package generated
 
-	// Write the imports
-	if _, err := fmt.Fprintf(outputFile, `import (
+import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
 	"text/template"
 )
 
-`); err != nil {
-		return fmt.Errorf("failed to write imports: %w", err)
-	}
+%s
 
-	// Write the generated structs
-	if _, err := fmt.Fprintf(outputFile, "%s\n\n", structs); err != nil {
-		return fmt.Errorf("failed to write structs: %w", err)
-	}
-
-	// Write the parser function
-	if _, err := fmt.Fprintf(outputFile, `// Parser parses the SOAP response and renders JSON using the template
-func Parser(xmlData []byte) (string, error) {
+// %sParser parses the SOAP response for the %s operation
+func %sParser(xmlData []byte) (string, error) {
 	// Define the SOAP envelope structure with the proper response type
 	var response struct {
-		XMLName xml.Name `+"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Envelope\"`"+`
+		XMLName xml.Name %s
 		Body    struct {
-			Response %sResponse `+"`xml:\"Response\"`"+`
-		} `+"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Body\"`"+`
+			Response %sResponse %s
+		} %s
 	}
 
 	// Unmarshal the XML into our strongly-typed struct
@@ -103,7 +88,7 @@ func Parser(xmlData []byte) (string, error) {
 	}
 
 	// Parse and execute the template
-	tmpl, err := template.New("parser").Parse(%q)
+	tmpl, err := template.ParseFiles("%s")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %%w", err)
 	}
@@ -114,8 +99,33 @@ func Parser(xmlData []byte) (string, error) {
 	}
 	return buf.String(), nil
 }
-`, operationName, templateContent); err != nil {
-		return fmt.Errorf("failed to write parser function: %w", err)
+`,
+		structs,
+		operationName,
+		operationName,
+		operationName,
+		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Envelope\"`",
+		operationName,
+		"`xml:\"Response\"`",
+		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Body\"`",
+		templatePath,
+	)
+
+	// // Read existing file if it exists and skip writing if unchanged
+	// existingContent, err := os.ReadFile(outputPath)
+	// if err == nil && string(existingContent) == generatedCode {
+	// 	return nil // Skip if content is the same
+	// }
+
+	// Create or update the file
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer outputFile.Close()
+
+	if _, err := outputFile.WriteString(generatedCode); err != nil {
+		return fmt.Errorf("failed to write generated code: %w", err)
 	}
 
 	return nil

@@ -1,0 +1,27 @@
+{
+  "server": {
+    "port": 8080,
+    "read_timeout": "30s",
+    "write_timeout": "30s",
+    "idle_timeout": "120s"
+  },
+  "routes": [
+    {
+      "path": "/api/soap/countries",
+      "method": "POST",
+      "soap_endpoint": "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso",
+      "request_template": "templates/request.tmpl",
+      "response_template": "templates/response.tmpl",
+      "wsdl_url": "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL",
+      "headers": {
+        "SOAPAction": "http://example.com/action",
+        "Content-Type": "text/xml;charset=UTF-8"
+      },
+      "timeout": "30s"
+    }
+  ],
+  "logging": {
+    "level": "info",
+    "format": "json"
+  }
+} 

@@ -7,20 +7,20 @@ import (
 	"text/template"
 )
 
-type CelsiusToFahrenheit struct {
-	Celsius string `xml:"Celsius"`
-}
-
 type CelsiusToFahrenheitResponse struct {
 	CelsiusToFahrenheitResult string `xml:"CelsiusToFahrenheitResult"`
 }
 
-type FahrenheitToCelsius struct {
-	Fahrenheit string `xml:"Fahrenheit"`
-}
-
 type FahrenheitToCelsiusResponse struct {
 	FahrenheitToCelsiusResult string `xml:"FahrenheitToCelsiusResult"`
+}
+
+type CelsiusToFahrenheit struct {
+	Celsius string `xml:"Celsius"`
+}
+
+type FahrenheitToCelsius struct {
+	Fahrenheit string `xml:"Fahrenheit"`
 }
 
 

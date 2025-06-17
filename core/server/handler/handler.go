@@ -12,7 +12,7 @@ import (
 	"rest-to-soap/core/config"
 	transport "rest-to-soap/core/server/soap"
 	"rest-to-soap/core/server/wsdl"
-	"rest-to-soap/pkg/generated"
+	generated "rest-to-soap/pkg/generated"
 
 	"go.uber.org/zap"
 )

@@ -13,7 +13,7 @@ type RegistryGenerator struct {
 
 func NewRegistryGenerator() *RegistryGenerator {
 	return &RegistryGenerator{
-		outputDir: "generated",
+		outputDir: "pkg/generated",
 	}
 }
 

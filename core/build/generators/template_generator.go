@@ -15,7 +15,7 @@ type TemplateGenerator struct {
 // NewTemplateGenerator creates a new template generator
 func NewTemplateGenerator() *TemplateGenerator {
 	// Create the output directory if it doesn't exist
-	outputDir := "generated"
+	outputDir := "pkg/generated"
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		panic(fmt.Sprintf("Failed to create output directory: %v", err))
 	}

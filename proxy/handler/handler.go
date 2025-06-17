@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"text/template"
 	"time"
 
-	"rest-to-soap/proxy/config"
-	"rest-to-soap/proxy/generated"
+	"rest-to-soap/config"
+	"rest-to-soap/generated"
 	transport "rest-to-soap/proxy/soap"
 	"rest-to-soap/proxy/wsdl"
 
@@ -35,24 +34,9 @@ type Handler struct {
 
 // NewHandler creates a new request handler
 func NewHandler(cfg *config.Config, logger *zap.Logger) (*Handler, error) {
-
-	for _, route := range cfg.Routes {
-		requestTmpl, err := template.ParseFiles(route.RequestTemplate)
-		if err != nil {
-			return nil, err
-		}
-
-		responseTmpl, err := template.ParseFiles(route.ResponseTemplate)
-		if err != nil {
-			return nil, err
-		}
-
-		generated.RouteHandlerRegistry[route.Path] = generated.GeneratedRouteHandler{
-			RouteConfig:      route,
-			Parser:           generated.RouteHandlerRegistry[route.Path].Parser,
-			RequestTemplate:  *requestTmpl,
-			ResponseTemplate: *responseTmpl,
-		}
+	routeRegistry, err := generated.GenerateRouteRegistry(cfg, logger)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Handler{
@@ -60,7 +44,7 @@ func NewHandler(cfg *config.Config, logger *zap.Logger) (*Handler, error) {
 		pool:                 NewPool(),
 		logger:               logger,
 		wsdl:                 wsdl.NewParser(logger),
-		routeHandlerRegistry: &generated.RouteHandlerRegistry,
+		routeHandlerRegistry: &routeRegistry,
 	}, nil
 }
 

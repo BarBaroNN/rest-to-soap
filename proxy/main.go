@@ -12,8 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"rest-to-soap/proxy/config"
-	"rest-to-soap/proxy/genparser"
+	"rest-to-soap/config"
 	"rest-to-soap/proxy/handler"
 
 	"go.uber.org/zap"
@@ -44,18 +43,6 @@ func main() {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 	defer logger.Sync()
-
-	// Initialize template generator
-	templateGen := genparser.NewTemplateGenerator()
-	if err := templateGen.GenerateTemplates(cfg); err != nil {
-		logger.Fatal("Failed to generate templates", zap.Error(err))
-	}
-
-	// Initialize registry generator
-	registryGen := genparser.NewRegistryGenerator()
-	if err := registryGen.GenerateRegistry(cfg); err != nil {
-		logger.Fatal("Failed to generate registry", zap.Error(err))
-	}
 
 	// Create handler
 	h, err := handler.NewHandler(cfg, logger)

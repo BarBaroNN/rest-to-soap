@@ -1,6 +1,6 @@
 # Variables
-GEN_CMD = go run ./builder/main.go   # Adjust this to your actual generator command
-BUILD_CMD = go build -o app ./proxy/main.go
+GEN_CMD = go run ./cmd/build/main.go   # Adjust this to your actual generator command
+BUILD_CMD = go build -o app ./cmd/server/main.go
 RUN_CMD = ./app
 
 .PHONY: all generate build run clean

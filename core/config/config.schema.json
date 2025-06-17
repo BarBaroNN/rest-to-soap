@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["server", "routes"],
+  "properties": {
+    "server": {
+      "type": "object",
+      "required": ["port"],
+      "properties": {
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8080
+        },
+        "read_timeout": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h)$",
+          "default": "30s"
+        },
+        "write_timeout": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h)$",
+          "default": "30s"
+        },
+        "idle_timeout": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h)$",
+          "default": "120s"
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "soap_endpoint", "request_template", "response_template"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^/[a-zA-Z0-9/-]*$"
+          },
+          "method": {
+            "type": "string",
+            "enum": ["GET", "POST", "PUT", "DELETE"],
+            "default": "POST"
+          },
+          "soap_endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "request_template": {
+            "type": "string"
+          },
+          "response_template": {
+            "type": "string"
+          },
+          "wsdl_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "timeout": {
+            "type": "string",
+            "pattern": "^[0-9]+(s|m|h)$",
+            "default": "30s"
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "default": "info"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["json", "console"],
+          "default": "json"
+        }
+      }
+    }
+  }
+} 

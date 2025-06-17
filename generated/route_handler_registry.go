@@ -2,7 +2,7 @@
 package generated
 
 import (
-	"rest-to-soap/config"
+	"rest-to-soap/core/config"
 	"text/template"
 	
 	"go.uber.org/zap"

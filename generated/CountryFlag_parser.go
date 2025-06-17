@@ -7,22 +7,140 @@ import (
 	"text/template"
 )
 
-type CountriesUsingCurrency struct {
-	SISOCurrencyCode string `xml:"sISOCurrencyCode"`
+type FullCountryInfoResponse struct {
+	FullCountryInfoResult tCountryInfo `xml:"FullCountryInfoResult"`
 }
 
-type CountryFlagResponse struct {
-	CountryFlagResult string `xml:"CountryFlagResult"`
+type LanguageNameResponse struct {
+	LanguageNameResult string `xml:"LanguageNameResult"`
+}
+
+type CountryName struct {
+	SCountryISOCode string `xml:"sCountryISOCode"`
+}
+
+type ArrayOftLanguage struct {
+	TLanguage []tLanguage `xml:"tLanguage"`
+}
+
+type ArrayOftContinent struct {
+	TContinent []tContinent `xml:"tContinent"`
+}
+
+type ListOfCurrenciesByName struct {
+}
+
+type CountryIntPhoneCodeResponse struct {
+	CountryIntPhoneCodeResult string `xml:"CountryIntPhoneCodeResult"`
+}
+
+type ListOfLanguagesByName struct {
+}
+
+type LanguageISOCodeResponse struct {
+	LanguageISOCodeResult string `xml:"LanguageISOCodeResult"`
+}
+
+type ListOfCountryNamesGroupedByContinent struct {
+}
+
+type ListOfLanguagesByCode struct {
+}
+
+type ArrayOftCurrency struct {
+	TCurrency []tCurrency `xml:"tCurrency"`
+}
+
+type FullCountryInfoAllCountriesResponse struct {
+	FullCountryInfoAllCountriesResult ArrayOftCountryInfo `xml:"FullCountryInfoAllCountriesResult"`
+}
+
+type CurrencyNameResponse struct {
+	CurrencyNameResult string `xml:"CurrencyNameResult"`
+}
+
+type CountryCurrencyResponse struct {
+	CountryCurrencyResult tCurrency `xml:"CountryCurrencyResult"`
+}
+
+type CurrencyName struct {
+	SCurrencyISOCode string `xml:"sCurrencyISOCode"`
+}
+
+type ListOfLanguagesByNameResponse struct {
+	ListOfLanguagesByNameResult ArrayOftLanguage `xml:"ListOfLanguagesByNameResult"`
 }
 
 type CountryFlag struct {
 	SCountryISOCode string `xml:"sCountryISOCode"`
 }
 
-type ListOfCurrenciesByName struct {
+type CountriesUsingCurrencyResponse struct {
+	CountriesUsingCurrencyResult ArrayOftCountryCodeAndName `xml:"CountriesUsingCurrencyResult"`
 }
 
-type ListOfCountryNamesGroupedByContinent struct {
+type CountryISOCode struct {
+	SCountryName string `xml:"sCountryName"`
+}
+
+type CountryIntPhoneCode struct {
+	SCountryISOCode string `xml:"sCountryISOCode"`
+}
+
+type ArrayOftCountryCodeAndName struct {
+	TCountryCodeAndName []tCountryCodeAndName `xml:"tCountryCodeAndName"`
+}
+
+type ListOfContinentsByNameResponse struct {
+	ListOfContinentsByNameResult ArrayOftContinent `xml:"ListOfContinentsByNameResult"`
+}
+
+type ListOfCurrenciesByCodeResponse struct {
+	ListOfCurrenciesByCodeResult ArrayOftCurrency `xml:"ListOfCurrenciesByCodeResult"`
+}
+
+type CountryCurrency struct {
+	SCountryISOCode string `xml:"sCountryISOCode"`
+}
+
+type FullCountryInfoAllCountries struct {
+}
+
+type CountryFlagResponse struct {
+	CountryFlagResult string `xml:"CountryFlagResult"`
+}
+
+type tCountryInfo struct {
+	SISOCode string `xml:"sISOCode"`
+	SName string `xml:"sName"`
+	SCapitalCity string `xml:"sCapitalCity"`
+	SPhoneCode string `xml:"sPhoneCode"`
+	SContinentCode string `xml:"sContinentCode"`
+	SCurrencyISOCode string `xml:"sCurrencyISOCode"`
+	SCountryFlag string `xml:"sCountryFlag"`
+	Languages ArrayOftLanguage `xml:"Languages"`
+}
+
+type ListOfContinentsByCodeResponse struct {
+	ListOfContinentsByCodeResult ArrayOftContinent `xml:"ListOfContinentsByCodeResult"`
+}
+
+type ListOfCountryNamesByCode struct {
+}
+
+type ListOfCountryNamesByNameResponse struct {
+	ListOfCountryNamesByNameResult ArrayOftCountryCodeAndName `xml:"ListOfCountryNamesByNameResult"`
+}
+
+type ArrayOftCountryCodeAndNameGroupedByContinent struct {
+	TCountryCodeAndNameGroupedByContinent []tCountryCodeAndNameGroupedByContinent `xml:"tCountryCodeAndNameGroupedByContinent"`
+}
+
+type LanguageName struct {
+	SISOCode string `xml:"sISOCode"`
+}
+
+type ListOfContinentsByCode struct {
 }
 
 type tContinent struct {
@@ -30,21 +148,48 @@ type tContinent struct {
 	SName string `xml:"sName"`
 }
 
-type ArrayOftCountryCodeAndName struct {
-	TCountryCodeAndName []tCountryCodeAndName `xml:"tCountryCodeAndName"`
-}
-
-type ArrayOftCurrency struct {
-	TCurrency []tCurrency `xml:"tCurrency"`
-}
-
-type tCurrency struct {
+type tCountryCodeAndName struct {
 	SISOCode string `xml:"sISOCode"`
 	SName string `xml:"sName"`
 }
 
-type CountryISOCode struct {
-	SCountryName string `xml:"sCountryName"`
+type ListOfCountryNamesByName struct {
+}
+
+type ListOfCurrenciesByCode struct {
+}
+
+type CountriesUsingCurrency struct {
+	SISOCurrencyCode string `xml:"sISOCurrencyCode"`
+}
+
+type ListOfLanguagesByCodeResponse struct {
+	ListOfLanguagesByCodeResult ArrayOftLanguage `xml:"ListOfLanguagesByCodeResult"`
+}
+
+type FullCountryInfo struct {
+	SCountryISOCode string `xml:"sCountryISOCode"`
+}
+
+type ListOfCountryNamesByCodeResponse struct {
+	ListOfCountryNamesByCodeResult ArrayOftCountryCodeAndName `xml:"ListOfCountryNamesByCodeResult"`
+}
+
+type CountryNameResponse struct {
+	CountryNameResult string `xml:"CountryNameResult"`
+}
+
+type tLanguage struct {
+	SISOCode string `xml:"sISOCode"`
+	SName string `xml:"sName"`
+}
+
+type ArrayOftCountryInfo struct {
+	TCountryInfo []tCountryInfo `xml:"tCountryInfo"`
+}
+
+type CapitalCityResponse struct {
+	CapitalCityResult string `xml:"CapitalCityResult"`
 }
 
 type tCountryCodeAndNameGroupedByContinent struct {
@@ -60,169 +205,24 @@ type LanguageISOCode struct {
 	SLanguageName string `xml:"sLanguageName"`
 }
 
-type CapitalCityResponse struct {
-	CapitalCityResult string `xml:"CapitalCityResult"`
-}
-
-type CurrencyName struct {
-	SCurrencyISOCode string `xml:"sCurrencyISOCode"`
-}
-
-type ListOfCountryNamesByCodeResponse struct {
-	ListOfCountryNamesByCodeResult ArrayOftCountryCodeAndName `xml:"ListOfCountryNamesByCodeResult"`
-}
-
-type FullCountryInfo struct {
-	SCountryISOCode string `xml:"sCountryISOCode"`
-}
-
-type FullCountryInfoAllCountriesResponse struct {
-	FullCountryInfoAllCountriesResult ArrayOftCountryInfo `xml:"FullCountryInfoAllCountriesResult"`
-}
-
-type ListOfLanguagesByCodeResponse struct {
-	ListOfLanguagesByCodeResult ArrayOftLanguage `xml:"ListOfLanguagesByCodeResult"`
-}
-
-type ListOfCountryNamesByName struct {
-}
-
-type CountryCurrencyResponse struct {
-	CountryCurrencyResult tCurrency `xml:"CountryCurrencyResult"`
-}
-
-type ListOfCountryNamesByNameResponse struct {
-	ListOfCountryNamesByNameResult ArrayOftCountryCodeAndName `xml:"ListOfCountryNamesByNameResult"`
-}
-
-type ListOfCountryNamesByCode struct {
-}
-
-type ListOfCurrenciesByCode struct {
-}
-
-type tCountryCodeAndName struct {
-	SISOCode string `xml:"sISOCode"`
-	SName string `xml:"sName"`
-}
-
-type tLanguage struct {
-	SISOCode string `xml:"sISOCode"`
-	SName string `xml:"sName"`
-}
-
-type tCountryInfo struct {
-	SISOCode string `xml:"sISOCode"`
-	SName string `xml:"sName"`
-	SCapitalCity string `xml:"sCapitalCity"`
-	SPhoneCode string `xml:"sPhoneCode"`
-	SContinentCode string `xml:"sContinentCode"`
-	SCurrencyISOCode string `xml:"sCurrencyISOCode"`
-	SCountryFlag string `xml:"sCountryFlag"`
-	Languages ArrayOftLanguage `xml:"Languages"`
-}
-
-type CountryIntPhoneCode struct {
-	SCountryISOCode string `xml:"sCountryISOCode"`
-}
-
-type ArrayOftCountryInfo struct {
-	TCountryInfo []tCountryInfo `xml:"tCountryInfo"`
-}
-
-type ListOfLanguagesByName struct {
-}
-
-type LanguageNameResponse struct {
-	LanguageNameResult string `xml:"LanguageNameResult"`
-}
-
-type LanguageName struct {
-	SISOCode string `xml:"sISOCode"`
-}
-
-type ArrayOftContinent struct {
-	TContinent []tContinent `xml:"tContinent"`
-}
-
-type ListOfCurrenciesByCodeResponse struct {
-	ListOfCurrenciesByCodeResult ArrayOftCurrency `xml:"ListOfCurrenciesByCodeResult"`
-}
-
-type ListOfContinentsByNameResponse struct {
-	ListOfContinentsByNameResult ArrayOftContinent `xml:"ListOfContinentsByNameResult"`
-}
-
-type ArrayOftLanguage struct {
-	TLanguage []tLanguage `xml:"tLanguage"`
-}
-
-type ListOfContinentsByName struct {
-}
-
-type FullCountryInfoResponse struct {
-	FullCountryInfoResult tCountryInfo `xml:"FullCountryInfoResult"`
-}
-
-type CountryName struct {
-	SCountryISOCode string `xml:"sCountryISOCode"`
-}
-
-type CountriesUsingCurrencyResponse struct {
-	CountriesUsingCurrencyResult ArrayOftCountryCodeAndName `xml:"CountriesUsingCurrencyResult"`
-}
-
-type ListOfLanguagesByNameResponse struct {
-	ListOfLanguagesByNameResult ArrayOftLanguage `xml:"ListOfLanguagesByNameResult"`
-}
-
-type LanguageISOCodeResponse struct {
-	LanguageISOCodeResult string `xml:"LanguageISOCodeResult"`
+type ListOfCurrenciesByNameResponse struct {
+	ListOfCurrenciesByNameResult ArrayOftCurrency `xml:"ListOfCurrenciesByNameResult"`
 }
 
 type CountryISOCodeResponse struct {
 	CountryISOCodeResult string `xml:"CountryISOCodeResult"`
 }
 
-type ListOfCurrenciesByNameResponse struct {
-	ListOfCurrenciesByNameResult ArrayOftCurrency `xml:"ListOfCurrenciesByNameResult"`
+type tCurrency struct {
+	SISOCode string `xml:"sISOCode"`
+	SName string `xml:"sName"`
 }
 
-type CountryIntPhoneCodeResponse struct {
-	CountryIntPhoneCodeResult string `xml:"CountryIntPhoneCodeResult"`
-}
-
-type CurrencyNameResponse struct {
-	CurrencyNameResult string `xml:"CurrencyNameResult"`
+type ListOfContinentsByName struct {
 }
 
 type CapitalCity struct {
 	SCountryISOCode string `xml:"sCountryISOCode"`
-}
-
-type CountryCurrency struct {
-	SCountryISOCode string `xml:"sCountryISOCode"`
-}
-
-type FullCountryInfoAllCountries struct {
-}
-
-type ListOfLanguagesByCode struct {
-}
-
-type ArrayOftCountryCodeAndNameGroupedByContinent struct {
-	TCountryCodeAndNameGroupedByContinent []tCountryCodeAndNameGroupedByContinent `xml:"tCountryCodeAndNameGroupedByContinent"`
-}
-
-type ListOfContinentsByCode struct {
-}
-
-type ListOfContinentsByCodeResponse struct {
-	ListOfContinentsByCodeResult ArrayOftContinent `xml:"ListOfContinentsByCodeResult"`
-}
-
-type CountryNameResponse struct {
-	CountryNameResult string `xml:"CountryNameResult"`
 }
 
 

@@ -10,12 +10,25 @@
       "path": "/api/soap/countries",
       "method": "POST",
       "soap_endpoint": "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso",
-      "soap_action": "FullCountryInfoAllCountries",
+      "soap_action": "CountryFlag",
       "request_template": "templates/request.tmpl",
       "response_template": "templates/response.tmpl",
       "wsdl_url": "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL",
       "headers": {
-        "SOAPAction": "FullCountryInfoAllCountries",
+        "SOAPAction": "CountryFlag",
+        "Content-Type": "text/xml;charset=UTF-8"
+      },
+      "timeout": "30s"
+    },
+    {
+      "path": "/api/soap/degrees/celsius-to-fahrenheit",
+      "method": "POST",
+      "soap_endpoint": "https://www.w3schools.com/xml/tempconvert.asmx",
+      "soap_action": "CelsiusToFahrenheit",
+      "request_template": "templates/celsius-to-farenheit-request.tmpl",
+      "response_template": "templates/celsius-to-farenheit-response.tmpl",
+      "wsdl_url": "https://www.w3schools.com/xml/tempconvert.asmx?WSDL",
+      "headers": {
         "Content-Type": "text/xml;charset=UTF-8"
       },
       "timeout": "30s"

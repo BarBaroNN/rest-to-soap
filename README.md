@@ -58,6 +58,35 @@ Key configuration sections:
 - `routes`: Route mappings (REST to SOAP)
 - `logging`: Logging configuration
 
+
+## Template example
+
+The server strips down the base Envelope and Body parts of the soap response, here's an example of a template:
+
+```go
+{{- range $i, $c := .FullCountryInfoAllCountriesResult.TCountryInfo }}
+    {{- if $i}},{{ end }}
+    {
+      "ISOCode": "{{ $c.SISOCode }}",
+      "name": "{{ $c.SName }}",
+      "capitalCity": "{{ $c.SCapitalCity }}",
+      "phoneCode": "{{ $c.SPhoneCode }}",
+      "continentCode": "{{ $c.SContinentCode }}",
+      "currencyISOCode": "{{ $c.SCurrencyISOCode }}",
+      "countryFlag": "{{ $c.SCountryFlag }}",
+      "languages": [
+        {{- range $j, $l := $c.Languages.TLanguage }}
+          {{- if $j}},{{ end }}
+          {
+            "code": "{{ $l.SISOCode }}",
+            "name": "{{ $l.SName }}"
+          }
+        {{- end }}
+      ]
+    }
+  {{- end }}
+```
+
 ## Monitoring
 
 The server exposes Prometheus metrics on port 9090 (configurable via `-metrics-port`). Available metrics:
@@ -106,10 +135,8 @@ The benchmark will:
 
 ```
 .
-├── benchmarks/        # Benchmarking tools
 ├── config/           # Configuration files and types
 ├── handlers/         # HTTP request handlers
-├── metrics/          # Prometheus metrics
 ├── templates/        # Quicktemplate files
 ├── transport/        # HTTP client and transport
 ├── wsdl/            # WSDL parsing and types
@@ -146,7 +173,3 @@ The server is optimized for high throughput with:
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
-
-## License
-
-MIT License - see LICENSE file for details

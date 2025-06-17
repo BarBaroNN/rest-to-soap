@@ -284,7 +284,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, string, erro
 }
 
 // buildStructsRecursive generates Go structs for the given type/element name recursively
-func buildStructsRecursive(typeMap map[string]xsComplexType, elementMap map[string]xsElement, typeName string, structs map[string]string, visited map[string]bool, parentField string) error {
+func buildStructsRecursive(typeMap map[string]xsComplexType, elementMap map[string]xsElement, typeName string, structs map[string]string, visited map[string]bool, _ string) error {
 	// Remove namespace
 	baseTypeName := typeName
 	if idx := strings.Index(baseTypeName, ":"); idx != -1 {

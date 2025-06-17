@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
 	"rest-to-soap/proxy/config"
 )
 
@@ -50,13 +49,13 @@ func (g *TemplateGenerator) GenerateTemplates(cfg *config.Config) error {
 // generateTemplate generates a Go template for a specific WSDL operation
 func (g *TemplateGenerator) generateTemplate(wsdlURL, operationName, templatePath string) error {
 	// Generate structs from WSDL
-	structs, operation, err := ExtractStructsFromWSDL(wsdlURL, operationName)
+	structs, responseType, err := ExtractStructsFromWSDL(wsdlURL, operationName)
 	if err != nil {
 		return fmt.Errorf("failed to extract structs: %w", err)
 	}
 
 	// Create the output file
-	outputPath := filepath.Join(g.outputDir, "parser.go")
+	outputPath := filepath.Join(g.outputDir, fmt.Sprintf("%s_parser.go", operationName))
 
 	// Prepare the generated code
 	generatedCode := fmt.Sprintf(
@@ -72,7 +71,9 @@ import (
 %s
 
 // %sParser parses the SOAP response for the %s operation
-func Parse(xmlData []byte) (string, error) {
+func %sParse(xmlData []byte) (string, error) {
+	fmt.Println(string(xmlData))
+
 	// Define the SOAP envelope structure with the proper response type
 	var response struct {
 		XMLName xml.Name %s
@@ -102,9 +103,10 @@ func Parse(xmlData []byte) (string, error) {
 		structs,
 		operationName,
 		operationName,
+		operationName,
 		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Envelope\"`",
-		operation,
-		fmt.Sprintf("`xml:\"%s\"`", operation),
+		responseType,
+		fmt.Sprintf("`xml:\"%s\"`", responseType),
 		"`xml:\"http://schemas.xmlsoap.org/soap/envelope/ Body\"`",
 		templatePath,
 	)

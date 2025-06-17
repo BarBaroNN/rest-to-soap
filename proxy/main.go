@@ -51,6 +51,12 @@ func main() {
 		logger.Fatal("Failed to generate templates", zap.Error(err))
 	}
 
+	// Initialize registry generator
+	registryGen := genparser.NewRegistryGenerator()
+	if err := registryGen.GenerateRegistry(cfg); err != nil {
+		logger.Fatal("Failed to generate registry", zap.Error(err))
+	}
+
 	// Create handler
 	h, err := handler.NewHandler(cfg, logger)
 	if err != nil {

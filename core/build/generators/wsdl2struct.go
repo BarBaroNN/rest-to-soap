@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -110,6 +111,7 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, string, erro
 	// Read WSDL content
 	var data []byte
 	var err error
+	var baseDir string
 
 	if strings.HasPrefix(wsdlPath, "http://") || strings.HasPrefix(wsdlPath, "https://") {
 		// Handle HTTP URLs
@@ -136,6 +138,8 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, string, erro
 		if err != nil {
 			return "", "", fmt.Errorf("failed to read WSDL file: %w", err)
 		}
+		// Get base directory for resolving relative imports
+		baseDir = filepath.Dir(wsdlPath)
 	}
 
 	fmt.Printf("Successfully read WSDL file (%d bytes)\n", len(data))
@@ -145,6 +149,13 @@ func ExtractStructsFromWSDL(wsdlPath, endpointName string) (string, string, erro
 		return "", "", fmt.Errorf("failed to parse WSDL: %w", err)
 	}
 	fmt.Printf("Successfully parsed WSDL\n")
+
+	// Process XSD imports if we have a base directory (local files)
+	if baseDir != "" {
+		if err := processXSDImports(&wsdl, baseDir); err != nil {
+			return "", "", fmt.Errorf("failed to process XSD imports: %w", err)
+		}
+	}
 
 	// Find the operation
 	fmt.Printf("Looking for endpoint: %s\n", endpointName)
@@ -573,4 +584,82 @@ func goFieldName(xmlName string) string {
 		return ""
 	}
 	return strings.ToUpper(xmlName[:1]) + xmlName[1:]
+}
+
+// processXSDImports processes XSD schema imports and merges them into the main WSDL
+func processXSDImports(wsdl *wsdlDefinitions, baseDir string) error {
+	fmt.Printf("Processing XSD imports in base directory: %s\n", baseDir)
+
+	// Process imports in each schema
+	for i := range wsdl.Types.Schemas {
+		schema := &wsdl.Types.Schemas[i]
+		fmt.Printf("Processing schema with target namespace: %s\n", schema.TargetNS)
+
+		// Process each import in the schema
+		for _, imp := range schema.Imports {
+			if imp.SchemaLocation == "" {
+				continue
+			}
+
+			fmt.Printf("Processing import: %s (namespace: %s)\n", imp.SchemaLocation, imp.Namespace)
+
+			// Resolve the import path relative to the base directory
+			importPath := filepath.Join(baseDir, imp.SchemaLocation)
+			
+			// Check if the imported file exists
+			if _, err := os.Stat(importPath); os.IsNotExist(err) {
+				fmt.Printf("Warning: imported XSD file not found: %s\n", importPath)
+				continue
+			}
+
+			// Read the imported XSD file
+			importData, err := os.ReadFile(importPath)
+			if err != nil {
+				return fmt.Errorf("failed to read imported XSD file %s: %w", importPath, err)
+			}
+
+			fmt.Printf("Successfully read imported XSD file: %s (%d bytes)\n", importPath, len(importData))
+
+			// Parse the imported XSD
+			var importedSchema xsSchema
+			if err := xml.Unmarshal(importData, &importedSchema); err != nil {
+				return fmt.Errorf("failed to parse imported XSD file %s: %w", importPath, err)
+			}
+
+			fmt.Printf("Successfully parsed imported XSD: %s\n", importPath)
+			fmt.Printf("  - Complex types: %d\n", len(importedSchema.ComplexTypes))
+			fmt.Printf("  - Simple types: %d\n", len(importedSchema.SimpleTypes))
+			fmt.Printf("  - Elements: %d\n", len(importedSchema.Elements))
+
+			// Merge the imported schema into the main schema
+			schema.ComplexTypes = append(schema.ComplexTypes, importedSchema.ComplexTypes...)
+			schema.SimpleTypes = append(schema.SimpleTypes, importedSchema.SimpleTypes...)
+			schema.Elements = append(schema.Elements, importedSchema.Elements...)
+
+			// Recursively process imports in the imported schema
+			if len(importedSchema.Imports) > 0 {
+				importBaseDir := filepath.Dir(importPath)
+				tempWsdl := wsdlDefinitions{
+					Types: struct {
+						Schemas []xsSchema `xml:"schema"`
+					}{
+						Schemas: []xsSchema{importedSchema},
+					},
+				}
+				if err := processXSDImports(&tempWsdl, importBaseDir); err != nil {
+					return fmt.Errorf("failed to process nested imports in %s: %w", importPath, err)
+				}
+				// Merge the processed nested imports back
+				if len(tempWsdl.Types.Schemas) > 0 {
+					mergedSchema := tempWsdl.Types.Schemas[0]
+					schema.ComplexTypes = append(schema.ComplexTypes, mergedSchema.ComplexTypes...)
+					schema.SimpleTypes = append(schema.SimpleTypes, mergedSchema.SimpleTypes...)
+					schema.Elements = append(schema.Elements, mergedSchema.Elements...)
+				}
+			}
+		}
+	}
+
+	fmt.Printf("Completed processing XSD imports\n")
+	return nil
 }

@@ -13,7 +13,7 @@
       "soap_action": "CountryFlag",
       "request_template": "config/templates/request.tmpl",
       "response_template": "config/templates/response.tmpl",
-      "wsdl_url": "http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL",
+      "wsdl_url": "config/wsdl/wsdl.xml",
       "headers": {
         "SOAPAction": "CountryFlag",
         "Content-Type": "text/xml;charset=UTF-8"

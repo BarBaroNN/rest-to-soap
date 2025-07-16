@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" 
+             xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:tns="http://example.com/service"
+             xmlns:types="http://example.com/types"
+             name="ExampleService"
+             targetNamespace="http://example.com/service">
+    
+    <types>
+        <xs:schema elementFormDefault="qualified" targetNamespace="http://example.com/service">
+            <!-- Import external XSD schema -->
+            <xs:import namespace="http://example.com/types" schemaLocation="wsdl-xsd0.xml"/>
+            
+            <!-- Local types that use imported types -->
+            <xs:element name="GetExampleRequest">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="id" type="xs:string" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            
+            <xs:element name="GetExampleResponse">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="result" type="types:ExampleType" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:schema>
+    </types>
+    
+    <message name="GetExampleRequest">
+        <part name="parameters" element="tns:GetExampleRequest" />
+    </message>
+    
+    <message name="GetExampleResponse">
+        <part name="parameters" element="tns:GetExampleResponse" />
+    </message>
+    
+    <portType name="ExamplePortType">
+        <operation name="GetExample">
+            <input message="tns:GetExampleRequest" />
+            <output message="tns:GetExampleResponse" />
+        </operation>
+    </portType>
+    
+    <binding name="ExampleBinding" type="tns:ExamplePortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+        <operation name="GetExample">
+            <soap:operation soapAction="GetExample" style="document" />
+            <input>
+                <soap:body use="literal" />
+            </input>
+            <output>
+                <soap:body use="literal" />
+            </output>
+        </operation>
+    </binding>
+    
+    <service name="ExampleService">
+        <port name="ExamplePort" binding="tns:ExampleBinding">
+            <soap:address location="http://example.com/service" />
+        </port>
+    </service>
+    
+</definitions>

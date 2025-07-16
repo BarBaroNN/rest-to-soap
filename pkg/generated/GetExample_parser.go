@@ -7,33 +7,30 @@ import (
 	"text/template"
 )
 
-type FahrenheitToCelsius struct {
-	Fahrenheit string `xml:"Fahrenheit"`
+type ExampleType struct {
+	Id string `xml:"id"`
+	Name string `xml:"name"`
 }
 
-type FahrenheitToCelsiusResponse struct {
-	FahrenheitToCelsiusResult string `xml:"FahrenheitToCelsiusResult"`
+type GetExampleResponse struct {
+	Result ExampleType `xml:"result"`
 }
 
-type CelsiusToFahrenheitResponse struct {
-	CelsiusToFahrenheitResult string `xml:"CelsiusToFahrenheitResult"`
-}
-
-type CelsiusToFahrenheit struct {
-	Celsius string `xml:"Celsius"`
+type GetExampleRequest struct {
+	Id string `xml:"id"`
 }
 
 
 
-// CelsiusToFahrenheitParser parses the SOAP response for the CelsiusToFahrenheit operation
-func CelsiusToFahrenheitParse(xmlData []byte) (string, error) {
+// GetExampleParser parses the SOAP response for the GetExample operation
+func GetExampleParse(xmlData []byte) (string, error) {
 	fmt.Println(string(xmlData))
 
 	// Define the SOAP envelope structure with the proper response type
 	var response struct {
 		XMLName xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Envelope"`
 		Body    struct {
-			Response CelsiusToFahrenheitResponse `xml:"CelsiusToFahrenheitResponse"`
+			Response GetExampleResponse `xml:"GetExampleResponse"`
 		} `xml:"http://schemas.xmlsoap.org/soap/envelope/ Body"`
 	}
 
@@ -43,7 +40,7 @@ func CelsiusToFahrenheitParse(xmlData []byte) (string, error) {
 	}
 
 	// Parse and execute the template
-	tmpl, err := template.ParseFiles("config/templates/celsius-to-farenheit-response.tmpl")
+	tmpl, err := template.ParseFiles("config/templates/response.tmpl")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %w", err)
 	}

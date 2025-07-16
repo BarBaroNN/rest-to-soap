@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/types"
+           xmlns:tns="http://example.com/types"
+           elementFormDefault="qualified">
+    
+    <!-- Example of an imported XSD schema -->
+    <xs:complexType name="ExampleType">
+        <xs:sequence>
+            <xs:element name="id" type="xs:string" />
+            <xs:element name="name" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+    
+    <xs:element name="ExampleElement" type="tns:ExampleType" />
+    
+</xs:schema>
